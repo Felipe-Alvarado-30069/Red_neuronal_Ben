@@ -1,17 +1,21 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-# Parámetros
+# --- Parámetros ---
 TAM_IMG = (64, 64)
 BATCH_SIZE = 16
+EPOCHS = 50
 
-# Preprocesamiento
+# --- Preprocesamiento con Data Augmentation ---
 datagen = ImageDataGenerator(
     rescale=1./255,
     validation_split=0.2,
     rotation_range=15,
     zoom_range=0.1,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
     horizontal_flip=True
 )
 
@@ -31,27 +35,53 @@ val_data = datagen.flow_from_directory(
     subset='validation'
 )
 
-# Modelo CNN
+# --- Modelo CNN optimizado ---
 model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(32, (3,3), activation='relu', input_shape=(64, 64, 3)),
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.MaxPooling2D(2, 2),
-    tf.keras.layers.Conv2D(64, (3,3), activation='relu'),
-    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.Dropout(0.25),
+
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.BatchNormalization(),
+    tf.keras.layers.MaxPooling2D(2, 2),
+    tf.keras.layers.Dropout(0.3),
+
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dropout(0.4),
     tf.keras.layers.Dense(2, activation='softmax')
 ])
 
-# Compilar
+# --- Compilar el modelo ---
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Entrenar y guardar el historial
-historial = model.fit(train_data, epochs=100, validation_data=val_data)
+# --- Callbacks ---
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=5,
+    restore_best_weights=True
+)
 
-# Guardar modelo
+mejor_modelo = ModelCheckpoint(
+    filepath='mejor_modelo.h5',
+    monitor='val_loss',
+    save_best_only=True,
+    verbose=1
+)
+
+# --- Entrenamiento ---
+historial = model.fit(
+    train_data,
+    epochs=EPOCHS,
+    validation_data=val_data,
+    callbacks=[early_stop, mejor_modelo]
+)
+
+# --- Guardar último modelo entrenado ---
 model.save('fuego_vs_diamante.h5')
 
-# 📊 Graficar precisión y pérdida
+# --- Gráficas de rendimiento ---
 plt.figure(figsize=(12, 5))
 
 # Precisión
