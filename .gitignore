@@ -1,0 +1,25 @@
+﻿# Carpetas que no quieres subir
+dataset/
+Include/
+Lib/
+Scripts/
+share/
+pyvenv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Archivos temporales
+*.log
+*.tmp
+*.swp
+
+# Entornos virtuales comunes
+.venv/
+env/
+venv/
+
+# Modelos y checkpoints
+pyvenv.cfg
